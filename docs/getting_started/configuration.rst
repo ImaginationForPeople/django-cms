@@ -333,6 +333,27 @@ Type: Boolean
 Default:``True``
 
 
+It is important to note that if you use redirect_on_fallback=False, you can create pages that google considers
+to be duplicate content, which can both adversely affecf your search ranking, and cause google to sent people
+to the wrong page (fallback content instead of the original).   To avoid this context variables are provided
+to inform search engines.
+
+It is recommended you put the following in all your CMS templates:
+
+.. code-block:: html+django
+
+    {% load cms_tags %}
+    <head>
+        ...
+        ...
+        {% if page_rel_cannonical_language_link %}
+            <link rel=canonical href="{{ page_rel_cannonical_language_link }}" />
+        {% endif %}
+        {% for language, link in page_rel_alternative_languages_links %}
+            <link rel="alternate" hreflang="{{ language }}" href="{{ link }}" />
+        {% endfor %}
+    </head>
+
 Unicode support for automated slugs
 ===================================
 

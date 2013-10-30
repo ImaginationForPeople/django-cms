@@ -73,19 +73,22 @@ def details(request, slug):
                         return HttpResponseRedirect(pages_root + attrs)
         else:
             return _handle_no_page(request, slug)
-
+        
     if current_language not in available_languages:
         fallback_languages = get_fallback_languages_for_page(page, current_language, request.user)
         if fallback_languages:
+            fallback_language = fallback_languages[0]
+            with force_language(fallback_language):
+                path = page.get_absolute_url(language=fallback_language, fallback=True) + attrs
             if get_redirect_on_fallback(current_language):
-                fallback_language = fallback_languages[0]
-                with force_language(fallback_language):
-                    path = page.get_absolute_url(language=fallback_language, fallback=True) + attrs
-                    return HttpResponseRedirect(path)
+                return HttpResponseRedirect(path)
+            else:
+                page_cannonical_language_link = path
         else:
             # There is a page object we can't find a proper language to render it
             return _handle_no_page(request, slug)
     else:
+        page_cannonical_language_link = None
         page_path = page.get_absolute_url(language=current_language)
         page_slug = page.get_path(language=current_language) or page.get_slug(language=current_language)
         if slug and slug != page_slug and request.path[:len(page_path)] != page_path:
@@ -145,6 +148,11 @@ def details(request, slug):
     context['current_page'] = page
     context['has_change_permissions'] = page.has_change_permission(request)
     context['has_view_permissions'] = has_view_permissions
+    def get_language_link(page, language):
+        with force_language(language):
+            return page.get_absolute_url(language=language)
+    context['page_rel_alternative_languages_links'] =  [(language, get_language_link(page,language)) for language in available_languages if language != current_language]
+    context['page_rel_cannonical_language_link'] = page_cannonical_language_link
 
     if not has_view_permissions:
         return _handle_no_page(request, slug)
